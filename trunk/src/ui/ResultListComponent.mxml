@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Copyright (c) 2011 Sören Brunk.
+This file is part of tFacet.
+
+tFacet is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+tFacet is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with tFacet.  If not, see <http://www.gnu.org/licenses/>.
+-->
+
+<s:Panel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 width="100%"
+		 xmlns:ui="ui.*"
+		 initialize="init()"
+		 title="Found Objects (of Type {FacetManager.getInstance().facetTree.owlClass.label})"
+		 skinClass="ui.skins.LogoPanelSkin"
+		 controlBarVisible="true"
+		 resize="resultList.percentHeight=100">
+	<s:layout>
+		<s:VerticalLayout horizontalAlign="center" gap="0"/>
+	</s:layout>
+	<fx:Script>
+		<![CDATA[
+			import connection.SPARQLService;
+			
+			import events.FilterUpdatedEvent;
+			
+			import model.FacetManager;
+			import model.ResultListItem;
+			import model.ResultListManager;
+			import model.facettree.FacetTreeNode;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.Menu;
+			import mx.core.FlexGlobals;
+			import mx.events.DataGridEvent;
+			import mx.events.ItemClickEvent;
+			
+			import spark.components.Button;
+			import spark.events.IndexChangeEvent;
+			
+			import ui.skins.LogoPanelSkin;
+			import ui.supportClasses.ResultListExtrasItemRenderer;
+			
+			[Bindable]
+			public var manager:ResultListManager;
+			private var previousColumnSelection:Vector.<Object> = new Vector.<Object>();
+			private var columnMap:Dictionary = new Dictionary();
+			private var nodeMap:Dictionary = new Dictionary();
+			
+			private function init():void {
+			}
+			
+			public function changeColumnsButton_clickHandler(event:MouseEvent):void
+			{
+				popupAnchor.displayPopUp = !popupAnchor.displayPopUp;
+			}
+			
+			private function get offset():uint {
+				return (manager.currentPage - 1) * ResultListManager.ITEMS_PER_PAGE;			
+			}
+			public function calculatePageCount(instanceCount:uint):uint {
+				return uint(Math.max(1, instanceCount / ResultListManager.ITEMS_PER_PAGE));
+			}
+			private function pagingHandler(e:ItemClickEvent):void {
+				if (e.label == "Previous") {
+					manager.currentPage--;
+					manager.requestInstances(offset);
+				} else {
+					manager.currentPage++;
+					manager.requestInstances(offset);
+				}
+			}
+			
+			/**
+			 * Add a new column to the grid
+			 */
+			protected function addColumn(node:FacetTreeNode):void
+			{
+				var newColumns:Array = resultList.columns;
+				var column:DataGridColumn = new DataGridColumn();
+				column.headerText = node.reverseAwareLabel;
+				column.labelFunction = labelFunction;
+				column.dataTipFunction = labelFunction;
+				column.minWidth = 150;
+				newColumns.push(column);
+				columnMap[node] = column;
+				nodeMap[column] = node;
+				resultList.columns = newColumns;
+				manager.requestExtraColumns(node);
+			}
+			
+			protected function labelFunction(item:Object, column:DataGridColumn):String
+			{
+				var typedItem:ResultListItem = item as ResultListItem;
+				var cellContent:Array = typedItem.columns[nodeMap[column]] as Array;
+				if (cellContent != null) {
+					return cellContent.join("\n");	
+				} else {
+					return "-";
+				}
+			}
+			
+			
+			/**
+			 * remove column from grid
+			 */
+			protected function removeColumn(node:FacetTreeNode):void
+			{
+				var newColumns:Array = resultList.columns;
+				newColumns.splice(newColumns.indexOf(columnMap[node]), 1);
+				delete nodeMap[columnMap[node]];
+				delete columnMap[node];
+				resultList.columns = newColumns;
+			}
+
+			protected function columnsSelection_changeHandler(event:IndexChangeEvent):void
+			{
+				// case item selected
+				if (previousColumnSelection.length < columnsSelection.selectedItems.length) {
+					addColumn(manager.possibleColumns.getItemAt(event.newIndex) as FacetTreeNode);	
+				} else // case item deselected
+				// flex doesn't have an easy way to figure out which item has been
+				// deselected, so we have to do it ourselves...
+				{
+					for (var index:String in previousColumnSelection) {
+						if (columnsSelection.selectedItems.indexOf(previousColumnSelection[index]) == -1) {
+							removeColumn(previousColumnSelection[index] as FacetTreeNode);
+						}
+					}
+				}
+				previousColumnSelection = columnsSelection.selectedItems;
+			}
+			
+			protected function columnSelectionLabelFunction(item:Object):String
+			{
+				var typedItem:FacetTreeNode = item as FacetTreeNode; 
+				return typedItem.reverseAwareLabel+" ("+typedItem.instanceCount+")";
+			}
+
+			protected function pageStepper_changeHandler(event:Event):void
+			{
+				manager.currentPage = pageStepper.value as int;
+				manager.requestInstances(offset,ResultListManager.ITEMS_PER_PAGE, textFilter.text);
+			}
+
+
+			protected function searchButton_clickHandler(event:MouseEvent):void
+			{
+				manager.requestInstanceCount(textFilter.text);
+				manager.requestInstances(offset,ResultListManager.ITEMS_PER_PAGE, textFilter.text);
+			}
+
+
+			protected function resultList_headerReleaseHandler(event:DataGridEvent):void
+			{
+//				event.preventDefault();
+				var column:DataGridColumn = resultList.columns[event.columnIndex];
+				manager.sort = nodeMap[column];
+				trace("sort descending: " + column.sortDescending);
+				manager.sortDescending = column.sortDescending;
+				manager.requestInstances(offset, ResultListManager.ITEMS_PER_PAGE, textFilter.text);
+			}
+		]]>
+	</fx:Script>
+		
+	<mx:DataGrid
+		id="resultList"
+		width="100%"
+		rowCount="8"
+		wordWrap="true"
+		variableRowHeight="true"
+		paddingBottom="0"
+		paddingTop="0"
+		sortableColumns="true"
+		dataProvider="{manager.instances}"
+		borderVisible="false"
+		horizontalScrollPolicy="auto"
+		headerRelease="resultList_headerReleaseHandler(event)"
+		>
+		<mx:columns>
+			<mx:DataGridColumn
+				dataField="label"
+				headerText="Name"
+				minWidth="200"
+				width="200"
+				>
+			</mx:DataGridColumn>
+		</mx:columns>
+	</mx:DataGrid>
+	
+	<s:controlBarLayout>
+		<s:BasicLayout/>
+	</s:controlBarLayout>
+	<s:controlBarContent>
+		<s:HGroup height="100%" verticalAlign="middle">
+			<s:TextInput id="textFilter"/>
+			<s:Button label="Search" click="searchButton_clickHandler(event)"/>
+		</s:HGroup>
+		<s:HGroup horizontalAlign="center" verticalAlign="middle" gap="8" width="100%" height="100%">
+			<s:Label text="Page"/>
+			<s:NumericStepper id="pageStepper"
+							  minimum="1"
+							  maximum="{calculatePageCount(manager.instanceCount)}"
+							  change="pageStepper_changeHandler(event)"/>
+			<s:Label text="of {calculatePageCount(manager.instanceCount)}"/>
+			<s:Label text="Number of Objects: {manager.instanceCount}"/>
+		</s:HGroup>
+		<s:HGroup height="100%" verticalAlign="middle" right="2">
+			<s:Button id="changeColumnsButton"
+					  label="Visible Properties"
+					  click="changeColumnsButton_clickHandler(event)"
+					  enabled="false"/>
+		</s:HGroup>
+			<s:PopUpAnchor id="popupAnchor"
+						   popUpPosition="below"
+						   right="2"
+						   bottom="0">
+				<s:TitleWindow
+					maxWidth="{FlexGlobals.topLevelApplication.width}"
+					maxHeight="{FlexGlobals.topLevelApplication.height}"
+					close="popupAnchor.displayPopUp = false"
+					title="Select visible properties">
+					<s:Scroller>
+						<s:Group>
+							<ui:CheckList
+								id="columnsSelection"
+								labelFunction="columnSelectionLabelFunction"				
+								dataProvider="{manager.possibleColumns}"
+								change="columnsSelection_changeHandler(event)"
+								itemRenderer="ui.supportClasses.ColumnSelectionItemRenderer">
+								<ui:layout>
+									<s:TileLayout orientation="columns"/>
+								</ui:layout>
+							</ui:CheckList>
+						</s:Group>
+					</s:Scroller>
+				</s:TitleWindow>
+			</s:PopUpAnchor>
+	</s:controlBarContent>
+</s:Panel>

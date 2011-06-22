@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Copyright (c) 2011 Sören Brunk.
+This file is part of tFacet.
+
+tFacet is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+tFacet is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with tFacet.  If not, see <http://www.gnu.org/licenses/>.
+-->
+
+<ui:BaseFacetComponent xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 implements="ui.supportClasses.IFacetComponent"
+		 creationComplete="creationCompleteHandler(event)"
+		 xmlns:supportClasses="ui.supportClasses.*"
+		 xmlns:ui="ui.*">
+	<fx:Script>
+		<![CDATA[
+			import flex.utils.spark.resize.ResizeManager;
+			
+			import model.FilterManager;
+			import model.facets.BaseFacet;
+			import model.facets.IFacet;
+			import model.facets.SimpleFacet;
+			import model.facets.SimpleFacetItem;
+			import model.rdf.ILiteral;
+			
+			import mx.controls.Alert;
+			import mx.events.CollectionEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ItemClickEvent;
+			import mx.events.ResizeEvent;
+			
+			import spark.events.IndexChangeEvent;
+			
+			import ui.supportClasses.IFacetComponent;
+			[Bindable]
+			public var facetModel:SimpleFacet;
+			public function setModel(model:IFacet):void
+			{
+				facetModel = model as SimpleFacet;
+			}
+			public function getModel():IFacet
+			{
+				return facetModel;
+			}
+
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				title = facetModel.node.createPropertyPath();
+				facetModel.requestInstanceCount();
+//				facetModel.instances.addEventListener(CollectionEvent.COLLECTION_CHANGE, collectionChangeHandler);
+				facetModel.addEventListener(BaseFacet.FACET_INSTANCES_LOADED, instancesLoadedHandler);
+				addEventListener(ResizeManager.RESIZE_END, onResize);
+			}
+			
+			protected function onResize(event:ResizeEvent):void
+			{
+				instanceListLayout.requestedRowCount = -1;
+			}
+			
+			// pagination stuff
+			private function get offset():uint {
+				return (facetModel.currentPage - 1) * SimpleFacet.ITEMS_PER_PAGE;			
+			}
+			public function calculatePageCount(instanceCount:uint):uint {
+				return uint(Math.max(1, (instanceCount/SimpleFacet.ITEMS_PER_PAGE)+1));
+			}
+			private function pagingHandler(e:ItemClickEvent):void {
+				if (e.label == "Previous") {
+					facetModel.currentPage--;
+					facetModel.requestInstances(offset);
+				} else {
+					facetModel.currentPage++;
+					facetModel.requestInstances(offset);
+				}
+				enabled = false;
+			}
+
+			protected function instanceList_changeHandler(event:IndexChangeEvent):void
+			{
+				if (event.newIndex >= 0)
+				{
+					facetModel.instances.getItemAt(event.newIndex).selected = true;
+				}
+				var selectedInstances:Vector.<ILiteral> = new Vector.<ILiteral>;
+				for each (var item:SimpleFacetItem in instanceList.selectedItems)
+				{
+					selectedInstances.push(item.instance);
+				}
+				facetModel.selectedInstances = selectedInstances;
+				facetModel.updateFilter(instanceList.selectedItems);
+			}
+			
+			protected function instancesLoadedHandler(event:Event):void
+			{
+				var selectedIndices:Vector.<int> = new Vector.<int>();
+				for (var index:String in facetModel.instances)
+				{
+					if ((facetModel.instances[index] as SimpleFacetItem).selected == true)
+					{
+						selectedIndices.push(int(index));
+					}
+				}
+				instanceList.selectedIndices = selectedIndices;
+				enabled = true;
+			}
+			
+			protected function pageStepper_changeHandler(event:Event):void
+			{
+				facetModel.currentPage = pageStepper.value as int;
+				facetModel.requestInstances(offset, SimpleFacet.ITEMS_PER_PAGE);
+			}
+			
+			protected function searchButton_clickHandler(event:MouseEvent):void
+			{
+				facetModel.searchString = textFilter.text;
+				facetModel.requestInstances(offset, SimpleFacet.ITEMS_PER_PAGE);
+			}
+		]]>
+	</fx:Script>
+	<ui:CheckList id="instanceList"
+			dataProvider="{facetModel.instances}"
+			labelField="instance"
+			width="100%" height="100%"
+			useVirtualLayout="true"
+			itemRenderer="ui.supportClasses.SimpleFacetItemRenderer"
+			change="instanceList_changeHandler(event)"
+			allowMultipleSelection="true"
+			borderVisible="false"
+			>
+		<ui:layout>
+			<s:TileLayout id="instanceListLayout" orientation="columns" requestedRowCount="5"/>
+		</ui:layout>
+	</ui:CheckList>
+	<ui:controlBarLayout>
+		<s:BasicLayout/>
+	</ui:controlBarLayout>
+	<ui:controlBarContent>
+		<s:HGroup width="100%" height="100%" verticalAlign="middle" horizontalAlign="left">
+			<s:TextInput width="80" id="textFilter"/>
+			<s:Button label="Search" click="searchButton_clickHandler(event)"/>
+			<s:Label text="Page"/>
+			<s:NumericStepper id="pageStepper"
+							  minimum="1"
+							  maximum="{calculatePageCount(facetModel.instanceCount)}"
+							  change="pageStepper_changeHandler(event)"/>
+			<s:Label text="of {calculatePageCount(facetModel.instanceCount)}"/>
+			<s:Label text="Number of Objects: {facetModel.instanceCount}"/>
+		</s:HGroup>
+	</ui:controlBarContent>
+</ui:BaseFacetComponent>

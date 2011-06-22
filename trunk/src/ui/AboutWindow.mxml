@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Copyright (c) 2011 Sören Brunk.
+This file is part of tFacet.
+
+tFacet is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+tFacet is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with tFacet.  If not, see <http://www.gnu.org/licenses/>.
+-->
+
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   title="About"
+			   width="400"
+			   backgroundColor="#dddddd"
+			   dropShadowVisible="true"
+			   close="handleCloseEvent()">
+	<fx:Script>
+		<![CDATA[
+			import flash.net.navigateToURL;
+			
+			import model.Constants;
+			
+			import mx.core.FlexGlobals;
+			import mx.managers.PopUpManager;
+			
+			private function handleCloseEvent():void {
+				PopUpManager.removePopUp(this);
+			}
+			
+			public static function showAboutWindow(event:MouseEvent):void
+			{
+				var aboutWindow:TitleWindow = 
+					PopUpManager.createPopUp(FlexGlobals.topLevelApplication as Main, AboutWindow, true) as TitleWindow;
+				PopUpManager.centerPopUp(aboutWindow);
+			}
+		]]>
+	</fx:Script>
+	<s:BorderContainer right="10" left="10" bottom="10" top="0"
+					   dropShadowVisible="true"
+					   borderVisible="false">
+		<s:layout>
+			<s:VerticalLayout paddingLeft="5" paddingRight="5" paddingTop="10" gap="20"/>
+		</s:layout>
+		
+		<s:Group width="100%">
+			<s:layout>
+				<s:VerticalLayout horizontalAlign="center" />
+			</s:layout>
+			<s:VGroup>				
+				<s:Image source="@Embed('/assets/tFacet-large.png')"
+						 buttonMode="true"
+						 click="navigateToURL(new URLRequest(Constants.TOOL_PAGE))"
+						 width="260" height="66" />
+				<s:Label fontSize="16" text="{'Version: ' + Constants.TOOL_VERSION }"/>
+			</s:VGroup>
+		</s:Group>
+		
+		<s:VGroup width="100%">
+			<s:Label fontWeight="bold" text="More" />
+			<s:RichEditableText width="100%" editable="false" focusEnabled="false">
+				<s:p>
+					Please visit
+					<s:a href="{Constants.TOOL_PAGE}">{Constants.TOOL_PAGE}</s:a>
+					for tFacet related publications, documentations and more.
+				</s:p>
+			</s:RichEditableText>
+		</s:VGroup>
+		
+		<s:VGroup width="100%">
+			<s:Label fontWeight="bold" text="© 2010/2011 by" />
+			<s:RichEditableText editable="false" focusEnabled="false">
+				<s:a href="mailto:brunk@visualdataweb.org">Sören Brunk (brunk@visualdataweb.org)</s:a>
+				<s:br />
+				<s:a href="mailto:philipp.heim@vis.uni-stuttgart.de">Philipp Heim (philipp.heim@vis.uni-stuttgart.de)</s:a>
+			</s:RichEditableText>
+		</s:VGroup>
+		<s:Image source="@Embed('/assets/vis-logo.png')"
+				 buttonMode="true"
+				 click="navigateToURL(new URLRequest('http://www.vis.uni-stuttgart.de'))" />
+	</s:BorderContainer>
+</s:TitleWindow>

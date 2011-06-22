@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Copyright (c) 2011 Sören Brunk.
+This file is part of tFacet.
+
+tFacet is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+tFacet is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with tFacet.  If not, see <http://www.gnu.org/licenses/>.
+-->
+
+<s:MXTreeItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx">
+	<fx:Script>
+		<![CDATA[
+			private function formatInstanceCount(instanceCount:Object):String
+			{
+				if (instanceCount == null) { return ""; }
+				else { return "(" + instanceCount.toString() + " objects)"; }
+			}
+		]]>
+	</fx:Script>
+	<s:states>
+		<s:State name="normal" />            
+		<s:State name="hovered" />
+		<s:State name="selected" />
+	</s:states>
+	<s:HGroup left="0" right="0" top="0" bottom="0" verticalAlign="middle">
+		<s:Rect id="indentationSpacer" width="{treeListData.indent}" percentHeight="100" alpha="0">
+			<s:fill>
+				<s:SolidColor color="0xFFFFFF" />
+			</s:fill>
+		</s:Rect>
+		<s:Group id="disclosureGroup">
+			<s:BitmapImage source="{treeListData.disclosureIcon}" visible="{treeListData.hasChildren}" />
+		</s:Group>
+		<s:BitmapImage source="{treeListData.icon}" />
+		<s:Label id="labelField" text="{treeListData.label}" paddingTop="2"/>
+		<s:Label id="instanceCountField" text="{formatInstanceCount(treeListData.item.instanceCount)}" paddingTop="2"/>
+	</s:HGroup>
+</s:MXTreeItemRenderer>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Copyright (c) 2010 Chris Callendar (http://flexdevtips.blogspot.com/)
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-->
+<s:HScrollBar xmlns:fx="http://ns.adobe.com/mxml/2009"
+	xmlns:s="library://ns.adobe.com/flex/spark"
+	xmlns:mx="library://ns.adobe.com/flex/mx">
+
+	<fx:Script>
+		<![CDATA[
+			override public function setLayoutBoundsSize(width:Number, height:Number, postLayoutTransform:Boolean = true):void {
+				var dx:Number = 0;
+				if (visible) {
+					// only add extra padding if the scrollbar width matches the parent width
+					var parentW:Number = (parent ? parent.width : width);
+					if (width >= parentW) {
+						dx = height;
+					}
+				}
+				super.setLayoutBoundsSize(width - dx, height, postLayoutTransform);
+			}
+		]]>
+	</fx:Script>
+
+</s:HScrollBar>
