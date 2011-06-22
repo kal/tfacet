@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Copyright (c) 2011 Sören Brunk.
+This file is part of tFacet.
+
+tFacet is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+tFacet is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with tFacet.  If not, see <http://www.gnu.org/licenses/>.
+-->
+
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   width="100%"
+			   skinClass="ui.skins.ResizableFacetWindowSkin"
+			   controlBarVisible="true"
+			   close="titlewindow_closeHandler(event)"
+			   >
+	<fx:Script>
+		<![CDATA[
+			import flex.utils.spark.resize.ResizableTitleWindowSkin;
+			import flex.utils.spark.resize.ResizeManager;
+			
+			import model.FacetManager;
+			
+			import mx.events.CloseEvent;
+			
+			import ui.skins.ResizableFacetWindowSkin;
+			import ui.supportClasses.IFacetComponent;
+
+			protected function titlewindow_closeHandler(event:CloseEvent):void
+			{
+				FacetManager.getInstance().hideFacetComponent(this as IFacetComponent);
+			}
+			
+			public function getResizeManager():ResizeManager
+			{
+				return (skin as ResizableFacetWindowSkin).resizeManager;
+			}
+
+		]]>
+	</fx:Script>
+</s:TitleWindow>

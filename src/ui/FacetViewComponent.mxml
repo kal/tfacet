@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Copyright (c) 2011 Sören Brunk.
+This file is part of tFacet.
+
+tFacet is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+tFacet is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with tFacet.  If not, see <http://www.gnu.org/licenses/>.
+-->
+
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:ui="ui.*" 
+		 xmlns:flexlib="http://code.google.com/p/flexlib/"
+		 width="100%" height="100%"
+		 >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import flexlib.containers.WindowShade;
+			import flexlib.events.WindowShadeEvent;
+			
+			import model.FacetManager;
+			import model.owl.IProperty;
+			import model.owl.OwlClass;
+			import model.owl.OwlObjectProperty;
+			import model.owl.OwlOntology;
+			
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			
+			import ui.supportClasses.IFacetComponent;
+			private var ontology:OwlOntology;
+			public function init():void
+			{
+				for each (var facet:IFacetComponent in FacetManager.getInstance().facetList)
+				{
+					addFacet(facet);
+				}
+			}
+			
+			public function addFacet(facetComponent:IFacetComponent):void
+			{
+//				var facetFrame:WindowShade = new WindowShade();
+//				facetFrame.styleName = "linkButtonWindowShade";
+//				facetFrame.percentWidth = 100;
+//				facetFrame.label = facetComponent.facetModel.property.resource.label.toString();
+//				facetFrame.opened = false;
+//				facetFrame.addElement(facetComponent);
+//				facetList.addElement(facetFrame);
+				facetList.addElement(facetComponent);
+			}
+		]]>
+	</fx:Script>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		.linkButtonWindowShade {
+			headerClass:ClassReference('mx.controls.LinkButton');
+			header-style-name: linkButtonStyle;
+			
+			drop-shadow-enabled:true;
+			
+			corner-radius:10;
+			border-style:solid;
+			
+			background-color:#efefef;
+			background-alpha:.7;
+		}         
+		
+		.linkButtonStyle {
+			corner-radius:10;	
+			fill-alphas:1,1;
+			padding-left:10;
+		}
+		
+/* 		mx|Form {
+			padding-top:0;
+			padding-bottom:5;	
+		} */
+	</fx:Style>
+	<s:NavigatorContent label="Facet View" width="100%" height="100%">
+		<mx:HDividedBox width="100%" height="100%">
+			<ui:ResultListComponent />
+			<s:VGroup id="facetList">
+<!--				<flexlib:WindowShade styleName="linkButtonWindowShade"
+									 label="Example Facet"
+									 width="100%" opened="false">
+					<ui:ObjectFacetComponent />
+				</flexlib:WindowShade>-->
+			</s:VGroup>
+		</mx:HDividedBox>
+	</s:NavigatorContent>
+</s:Group>

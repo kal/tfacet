@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Copyright (c) 2011 Sören Brunk.
+This file is part of tFacet.
+
+tFacet is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+tFacet is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with tFacet.  If not, see <http://www.gnu.org/licenses/>.
+-->
+
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   xmlns:ui="ui.*"
+			   xmlns:flexlib="http://code.google.com/p/flexlib/"
+			   applicationComplete="init()"
+			   controlBarVisible="false"
+			   skinClass="ui.skins.ScrollerAppSkin"
+			   preloader="preloader.CustomPreloader"
+			   >
+	<fx:Metadata>
+		[SWF(width='1024', height='768')]
+	</fx:Metadata>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		.linkButtonWindowShade {
+			headerClass:ClassReference('mx.controls.LinkButton');
+			header-style-name: linkButtonStyle;
+			
+			drop-shadow-enabled:true;
+			
+			corner-radius:0;
+			border-style:solid;
+			
+			background-color:#efefef;
+			background-alpha:.7;
+		}
+		
+		.linkButtonStyle {
+			corner-radius:0;	
+			fill-alphas:1,1;
+			padding-left:10;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import connection.SPARQLService;
+			
+			import mx.core.ContainerCreationPolicy;
+			import mx.core.FlexGlobals;
+		]]>
+	</fx:Script>
+	<fx:Script source="main.as" />
+	<s:Group id="mainContainer" width="100%" height="100%" clipAndEnableScrolling="true"
+			 minWidth="800" minHeight="500">
+		<mx:ViewStack selectedIndex="0" y="0" id="mainViewStack"
+					  left="5" right="5" top="5" bottom="5"
+					  creationPolicy="{ContainerCreationPolicy.ALL}">
+			<s:NavigatorContent label="Class Selection" width="100%" height="100%" id="classSelectionView">
+				<s:Group width="100%" height="100%">
+					<s:layout>
+						<s:VerticalLayout horizontalAlign="center"/>
+					</s:layout>
+					<ui:ClassSelection id="classSelection" classSelected="{createFacetView(event.selectedClass)}" />
+					<flexlib:WindowShade
+						styleName="linkButtonWindowShade"
+						label="Show Advanced Settings"
+						opened="false"
+						width="400"
+						horizontalAlign="center">
+						<s:HGroup
+							verticalAlign="middle">
+							<s:Label text="Endpoint:"/>
+							<s:ComboBox id="endpointSelection" width="250"
+										selectedIndex="0"
+										dataProvider="{Constants.SPARQL_ENDPOINTS}"
+										change="SPARQLService.defaultEndpoint = endpointSelection.selectedItem">
+							</s:ComboBox>
+							<s:Button label="Reload" click="reloadHandler()"/>
+						</s:HGroup>
+					</flexlib:WindowShade>
+				</s:Group>
+				<ui:RequestFailedWindow id="requestFailedWindow"
+										verticalCenter="0"
+										horizontalCenter="0"
+										visible="false" />
+			</s:NavigatorContent>
+			<s:NavigatorContent height="100%">
+				<ui:ContentContainer id="contentContainer" height="100%"/>					
+			</s:NavigatorContent>
+		</mx:ViewStack>
+	</s:Group>
+</s:Application>

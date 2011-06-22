@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Copyright (c) 2011 Sören Brunk.
+This file is part of tFacet.
+
+tFacet is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+tFacet is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with tFacet.  If not, see <http://www.gnu.org/licenses/>.
+-->
+
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:ui="ui.*"
+		 width="100%" height="100%"
+		 clipAndEnableScrolling="true"
+		 initialize="initializeHandler(event)">
+	<s:layout>
+		<s:VerticalLayout horizontalAlign="center" />
+	</s:layout>
+	<fx:Script>
+		<![CDATA[
+			import model.FacetManager;
+			import model.facets.ObjectFacet;
+			import model.facettree.FacetTreeLoader;
+			import model.facettree.FacetTreeNode;
+			import model.owl.IProperty;
+			import model.owl.OwlClass;
+			
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			import mx.events.TreeEvent;
+			
+			import ui.supportClasses.FacetTreeDataDescriptor;
+			import ui.supportClasses.IFacetComponent;
+			import ui.supportClasses.TreeItemRenderer;
+			protected function initializeHandler(event:FlexEvent):void
+			{
+				// give facetManager a reference to the facet container component
+				FacetManager.getInstance().facetContainer = facetContainer;
+//				tree.setStyle("lineStyle", lineStyleCombo.selectedItem);
+//				facetTree.setStyle("lineThickness", 1);
+//				facetTree.setStyle("lineAlpha", 1);
+//				facetTree.setStyle("lineColor", "#808080");
+			}
+			
+			protected static function treeLabel(item:Object):String
+			{
+				var node:FacetTreeNode = item as FacetTreeNode;
+				var labelString:String;
+				if (node.reversedProperty == false)
+				{
+					labelString = node.label;
+					if (node.property.range.length > 0 && node.property.range[0] is OwlClass)
+					{
+						labelString += ": " + (node.property.range[0] as OwlClass).resource.label;	
+					}					
+				} else
+				{
+					labelString = "is " + node.label + " of";
+					labelString += ": " + (node.property.domain[0] as OwlClass).resource.label;
+				}
+				labelString += " (~" + item.instanceCount + ")"
+				return labelString;
+			}
+
+			protected function facetTree_itemOpenHandler(event:TreeEvent):void
+			{
+				var selectedItem:FacetTreeNode = event.item as FacetTreeNode;
+				if (selectedItem.loader.loadingState == FacetTreeLoader.NOT_LOADED)
+				{
+					(event.item as FacetTreeNode).loader.requestChildren();	
+				}
+			}
+			
+			protected function toggleFacetDetails(event:ListEvent):void
+			{
+				var selectedItem:FacetTreeNode = facetTree.selectedItem as FacetTreeNode;
+				FacetManager.getInstance().toggleFacetDetails(selectedItem);
+			}
+			
+			protected function facetTree_updateCompleteHandler(event:FlexEvent):void
+			{
+				// TODO Auto-generated method stub
+			}
+
+
+			protected function facetTree_changeHandler(event:ListEvent):void
+			{
+				event.preventDefault();
+			}
+
+		]]>
+	</fx:Script>
+	<mx:VDividedBox width="100%" height="100%" dividerRelease="resultListComponent.percentHeight=100">
+			<ui:ResultListComponent id="resultListComponent" minHeight="150"/>
+		<s:Group width="100%" height="100%" clipAndEnableScrolling="true">
+			<mx:HDividedBox width="100%" height="100%">
+				<s:Panel minWidth="300" title="Filter Selection"  width="340" height="100%">
+					<s:layout>
+						<s:VerticalLayout/>
+					</s:layout>
+					<mx:Tree 
+						id="facetTree"
+						width="100%"
+						height="100%"
+						labelFunction="{treeLabel}"
+						showRoot="false"
+						dataDescriptor="{new FacetTreeDataDescriptor()}"
+						itemOpen="facetTree_itemOpenHandler(event)"
+						borderStyle="none"
+						wordWrap="true"
+						variableRowHeight="true"
+						itemRenderer="ui.supportClasses.TreeItemRenderer"
+						change="facetTree_changeHandler(event)"
+						>
+						<!-- dataChange="facetTree.invalidateList();"-->
+					</mx:Tree>
+				</s:Panel>
+				<s:Panel title="Filter Details" height="100%">
+					<s:Scroller top="0" bottom="0" left="0" right="0">
+						<s:Group id="facetContainer" clipAndEnableScrolling="true" height="100%">
+							<s:layout>
+								<s:VerticalLayout paddingLeft="2" paddingRight="2" paddingTop="2" paddingBottom="2" horizontalAlign="justify"/>
+							</s:layout>
+						</s:Group>					
+					</s:Scroller>
+				</s:Panel>
+			</mx:HDividedBox>
+		</s:Group>
+	</mx:VDividedBox>
+</s:Group>

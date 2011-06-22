@@ -1,0 +1,302 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Copyright (c) 2011 Sören Brunk.
+This file is part of tFacet.
+
+tFacet is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+tFacet is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with tFacet.  If not, see <http://www.gnu.org/licenses/>.
+-->
+
+<ui:BaseFacetComponent xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:ui="ui.*"
+		 creationComplete="creationCompleteHandler(event)"
+		 xmlns:supportClasses="ui.supportClasses.*"
+		 implements="ui.supportClasses.IFacetComponent"
+		 >
+	<ui:layout>
+		<s:VerticalLayout/>
+	</ui:layout>
+	<fx:Script>
+		<![CDATA[
+			import flex.utils.spark.resize.ResizableTitleWindowSkin;
+			
+			import model.FacetManager;
+			import model.facets.BaseFacet;
+			import model.facets.IFacet;
+			import model.facets.ObjectFacet;
+			import model.facets.ObjectFacetItem;
+			import model.facettree.FacetTreeNode;
+			import model.owl.OwlClass;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.CollectionEvent;
+			import mx.events.DataGridEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ItemClickEvent;
+			import mx.events.ListEvent;
+			
+			import spark.events.IndexChangeEvent;
+			import spark.skins.spark.TitleWindowCloseButtonSkin;
+			
+			import ui.skins.FacetWindowSkin;
+			import ui.supportClasses.IFacetComponent;
+
+			[Bindable]
+			public var facetModel:ObjectFacet;
+			private var previousColumnSelection:Vector.<Object> = new Vector.<Object>();
+			private var columnMap:Dictionary = new Dictionary();
+			private var nodeMap:Dictionary = new Dictionary();
+
+			public function setModel(model:IFacet):void
+			{
+				facetModel = model as ObjectFacet;
+			}
+			public function getModel():IFacet
+			{
+				return facetModel;
+			}
+
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				title = facetModel.node.createPropertyPath();
+				facetModel.requestInstanceCount();
+				facetModel.requestInstances();
+				facetModel.addEventListener(BaseFacet.FACET_INSTANCES_LOADED, instancesLoadedHandler);
+			}
+			
+			// pagination stuff
+			private function get offset():uint {
+				return (facetModel.currentPage - 1) * ObjectFacet.ITEMS_PER_PAGE;			
+			}
+			public function calculatePageCount(instanceCount:uint):uint {
+				return uint(Math.max(1, (instanceCount/ObjectFacet.ITEMS_PER_PAGE)+1));
+			}
+			private function pagingHandler(e:ItemClickEvent):void {
+				if (e.label == "Previous") {
+					facetModel.currentPage--;
+					facetModel.requestInstances(offset);
+				} else {
+					facetModel.currentPage++;
+					facetModel.requestInstances(offset);
+				}
+				enabled = false;
+			}
+
+			protected function instanceGrid_changeHandler(event:ListEvent):void
+			{
+				var selectedInstances:Dictionary = new Dictionary();
+				for each (var item:ObjectFacetItem in instanceGrid.selectedItems)
+				{
+					selectedInstances[item.instanceURI] = item.instanceURI;
+				}
+				facetModel.selectedInstances = selectedInstances;
+				facetModel.updateFilter(instanceGrid.selectedItems);
+			}
+
+			protected function instancesLoadedHandler(event:Event):void
+			{
+				enabled = true;
+				var selectedIndices:Array = [];
+				for (var index:String in facetModel.instances)
+				{
+					if (facetModel.selectedInstances[(facetModel.instances[index] as ObjectFacetItem).instanceURI] != null)
+					{
+						selectedIndices.push(int(index));
+					}
+//					if ((facetModel.instances[index] as ObjectFacetItem).selected == true)
+//					{
+//						selectedIndices.push(int(index));
+//					}
+				}
+				instanceGrid.selectedIndices = selectedIndices;
+			}
+			
+			/**
+			 * Add a new detail column to the grid
+			 */
+			protected function addColumn(node:FacetTreeNode):void
+			{
+				var newColumns:Array = instanceGrid.columns;
+				var column:DataGridColumn = new DataGridColumn();
+				//				column.itemRenderer = new ClassFactory(ResultListExtrasItemRenderer);
+				column.headerText = node.reverseAwareLabel;
+				column.labelFunction = labelFunction;
+				column.minWidth = 150;
+				newColumns.push(column);
+				columnMap[node] = column;
+				nodeMap[column] = node;
+				instanceGrid.columns = newColumns;
+				facetModel.requestExtraColumns(node);
+			}
+			
+			protected function labelFunction(item:Object, column:DataGridColumn):String
+			{
+				var typedItem:ObjectFacetItem = item as ObjectFacetItem;
+				var cellContent:Array = typedItem.columns[nodeMap[column]] as Array;
+				if (cellContent != null)
+				{
+					return cellContent.join("\n");	
+				} else
+				{
+					return "-";
+				}
+			}
+			
+			/**
+			 * remove detail column from grid
+			 */
+			protected function removeColumn(node:FacetTreeNode):void
+			{
+				var newColumns:Array = instanceGrid.columns;
+				newColumns.splice(newColumns.indexOf(columnMap[node]), 1);
+				delete nodeMap[columnMap[node]];
+				delete columnMap[node];
+				instanceGrid.columns = newColumns;
+			}
+			
+			protected function columnsSelection_changeHandler(event:IndexChangeEvent):void
+			{
+				// case item selected
+				if (previousColumnSelection.length < columnsSelection.selectedItems.length)
+				{
+					addColumn(facetModel.possibleColumns.getItemAt(event.newIndex) as FacetTreeNode);
+					
+				} else // case item deselected
+					// flex doesn't have an easy way to figure out which item has been
+					// deselected, so we have to do it ourselves...
+				{
+					for (var index:String in previousColumnSelection)
+					{
+						if (columnsSelection.selectedItems.indexOf(previousColumnSelection[index]) == -1)
+						{
+							removeColumn(previousColumnSelection[index] as FacetTreeNode);
+						}
+					}
+				}
+				previousColumnSelection = columnsSelection.selectedItems;
+			}
+			
+			protected function columnSelectionLabelFunction(item:Object):String
+			{
+				var typedItem:FacetTreeNode = item as FacetTreeNode; 
+				return typedItem.reverseAwareLabel+" ("+typedItem.instanceCount+")";
+			}
+			
+			protected function pageStepper_changeHandler(event:Event):void
+			{
+				facetModel.currentPage = pageStepper.value as int;
+				facetModel.requestInstances(offset);
+			}
+			
+			protected function searchButton_clickHandler(event:MouseEvent):void
+			{
+				facetModel.filterString = textFilter.text;
+				facetModel.requestInstanceCount();
+				facetModel.requestInstances(offset,ObjectFacet.ITEMS_PER_PAGE);
+			}
+			
+			protected function instanceGrid_headerReleaseHandler(event:DataGridEvent):void
+			{
+				//				event.preventDefault();
+				var column:DataGridColumn = instanceGrid.columns[event.columnIndex];
+				if (column == countColumn) {
+					facetModel.countSort = true;
+				} else {
+					facetModel.countSort = false;
+					facetModel.sort = nodeMap[column];	
+				}
+				trace("sort descending: " + column.sortDescending);
+				facetModel.sortDescending = column.sortDescending;
+				facetModel.requestInstances(offset, ObjectFacet.ITEMS_PER_PAGE);
+			}
+			
+		]]>
+	</fx:Script>
+	<supportClasses:MultiSelectDataGrid
+		id="instanceGrid" 
+		height="100%" width="100%"
+		dataProvider="{facetModel.instances}"
+		allowMultipleSelection="true"
+		change="instanceGrid_changeHandler(event)"
+		paddingBottom="0"
+		paddingTop="0"
+		horizontalScrollPolicy="auto"
+		borderVisible="false"
+		sortableColumns="true"
+		variableRowHeight="true"
+		wordWrap="true"
+		headerRelease="instanceGrid_headerReleaseHandler(event)">
+		<supportClasses:columns>
+			<mx:DataGridColumn 
+				headerText="Name"
+				dataField="label"
+				width="220"
+				itemRenderer="ui.supportClasses.LabelFieldItemRenderer"
+				rendererIsEditor="true">
+			</mx:DataGridColumn>
+			<mx:DataGridColumn id="countColumn" headerText="Count" dataField="instanceCount" minWidth="45" width="45"/>
+		</supportClasses:columns>
+	</supportClasses:MultiSelectDataGrid>
+	
+	<ui:controlBarLayout>
+		<s:BasicLayout/>
+	</ui:controlBarLayout>
+	<ui:controlBarContent>
+		<s:HGroup height="100%" verticalAlign="middle" horizontalAlign="left" gap="8">
+			<s:TextInput width="80" id="textFilter"/>
+			<s:Button label="Search" click="searchButton_clickHandler(event)"/>
+		</s:HGroup>
+		<s:HGroup width="100%" height="100%" verticalAlign="middle" horizontalAlign="center" gap="8">			
+			<s:Label text="Page"/>
+			<s:NumericStepper id="pageStepper"
+							  minimum="1"
+							  maximum="{calculatePageCount(facetModel.instanceCount)}"
+							  change="pageStepper_changeHandler(event)"/>
+			<s:Label text="of {calculatePageCount(facetModel.instanceCount)}"/>
+			<s:Label text="Number of Objects: {facetModel.instanceCount}"/>
+		</s:HGroup>
+		<s:PopUpAnchor id="popupAnchor" popUpPosition="left" left="2">
+					<s:TitleWindow
+						maxWidth="{FlexGlobals.topLevelApplication.width}"
+						maxHeight="{FlexGlobals.topLevelApplication.height}"
+						close="popupAnchor.displayPopUp = false"
+						title="Select visible properties">
+						<s:Scroller width="100%" height="100%">
+							<s:Group clipAndEnableScrolling="true" width="100%">
+								<ui:CheckList
+									width="100%"
+									id="columnsSelection"
+									labelFunction="columnSelectionLabelFunction"				
+									dataProvider="{facetModel.possibleColumns}"
+									change="columnsSelection_changeHandler(event)"
+									itemRenderer="ui.supportClasses.ColumnSelectionItemRenderer">
+									<ui:layout>
+										<s:TileLayout orientation="columns"/>
+									</ui:layout>
+								</ui:CheckList>
+							</s:Group>
+						</s:Scroller>
+					</s:TitleWindow>
+		</s:PopUpAnchor>
+		<s:Button id="visiblePropertiesButton"
+				  label="Visible Properties"
+				  right="20" top="1"
+				  enabled="{facetModel.childrenLoaded}"
+				  click="popupAnchor.displayPopUp = !popupAnchor.displayPopUp;"/>
+	</ui:controlBarContent>
+</ui:BaseFacetComponent>
