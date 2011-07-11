@@ -225,6 +225,12 @@ along with tFacet.  If not, see <http://www.gnu.org/licenses/>.
 				facetModel.requestInstances(offset, ObjectFacet.ITEMS_PER_PAGE);
 			}
 			
+
+			protected function titlewindow1_initializeHandler(event:FlexEvent):void
+			{
+				maxHeight = FlexGlobals.topLevelApplication.height - 10;
+			}
+
 		]]>
 	</fx:Script>
 	<supportClasses:MultiSelectDataGrid
@@ -272,22 +278,17 @@ along with tFacet.  If not, see <http://www.gnu.org/licenses/>.
 		</s:HGroup>
 		<s:PopUpAnchor id="popupAnchor" popUpPosition="left" left="2">
 					<s:TitleWindow
-						maxWidth="{FlexGlobals.topLevelApplication.width}"
-						maxHeight="{FlexGlobals.topLevelApplication.height}"
 						close="popupAnchor.displayPopUp = false"
-						title="Select visible properties">
+						title="Select visible properties"
+						initialize="titlewindow1_initializeHandler(event)">
 						<s:Scroller width="100%" height="100%">
-							<s:Group clipAndEnableScrolling="true" width="100%">
+							<s:Group>
 								<ui:CheckList
-									width="100%"
 									id="columnsSelection"
 									labelFunction="columnSelectionLabelFunction"				
 									dataProvider="{facetModel.possibleColumns}"
 									change="columnsSelection_changeHandler(event)"
 									itemRenderer="ui.supportClasses.ColumnSelectionItemRenderer">
-									<ui:layout>
-										<s:TileLayout orientation="columns"/>
-									</ui:layout>
 								</ui:CheckList>
 							</s:Group>
 						</s:Scroller>

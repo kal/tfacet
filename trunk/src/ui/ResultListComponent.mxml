@@ -20,7 +20,7 @@ along with tFacet.  If not, see <http://www.gnu.org/licenses/>.
 <s:Panel xmlns:fx="http://ns.adobe.com/mxml/2009" 
 		 xmlns:s="library://ns.adobe.com/flex/spark" 
 		 xmlns:mx="library://ns.adobe.com/flex/mx"
-		 width="100%"
+		 width="100%" height="100%"
 		 xmlns:ui="ui.*"
 		 initialize="init()"
 		 title="Found Objects (of Type {FacetManager.getInstance().facetTree.owlClass.label})"
@@ -47,11 +47,13 @@ along with tFacet.  If not, see <http://www.gnu.org/licenses/>.
 			import mx.core.FlexGlobals;
 			import mx.events.DataGridEvent;
 			import mx.events.ItemClickEvent;
+			import mx.managers.PopUpManager;
 			
 			import spark.components.Button;
 			import spark.events.IndexChangeEvent;
 			
 			import ui.skins.LogoPanelSkin;
+			import ui.supportClasses.ColumnSelectionWindow;
 			import ui.supportClasses.ResultListExtrasItemRenderer;
 			
 			[Bindable]
@@ -60,12 +62,22 @@ along with tFacet.  If not, see <http://www.gnu.org/licenses/>.
 			private var columnMap:Dictionary = new Dictionary();
 			private var nodeMap:Dictionary = new Dictionary();
 			
+			public var selectionWindow:ColumnSelectionWindow = new ColumnSelectionWindow();
+			private var selectionWindowVisible:Boolean;
+			
 			private function init():void {
 			}
 			
 			public function changeColumnsButton_clickHandler(event:MouseEvent):void
 			{
-				popupAnchor.displayPopUp = !popupAnchor.displayPopUp;
+				if (!selectionWindowVisible) {
+					PopUpManager.addPopUp(selectionWindow, FlexGlobals.topLevelApplication as Main, true);
+					selectionWindow.columnsSelection.dataProvider = manager.possibleColumns;
+					selectionWindow.columnsSelection.addEventListener(IndexChangeEvent.CHANGE, columnsSelection_changeHandler);
+				} else {
+					PopUpManager.removePopUp(selectionWindow);
+				}
+				selectionWindowVisible = ! selectionWindowVisible;
 			}
 			
 			private function get offset():uint {
@@ -129,25 +141,19 @@ along with tFacet.  If not, see <http://www.gnu.org/licenses/>.
 			protected function columnsSelection_changeHandler(event:IndexChangeEvent):void
 			{
 				// case item selected
-				if (previousColumnSelection.length < columnsSelection.selectedItems.length) {
+				if (previousColumnSelection.length < selectionWindow.columnsSelection.selectedItems.length) {
 					addColumn(manager.possibleColumns.getItemAt(event.newIndex) as FacetTreeNode);	
 				} else // case item deselected
 				// flex doesn't have an easy way to figure out which item has been
 				// deselected, so we have to do it ourselves...
 				{
 					for (var index:String in previousColumnSelection) {
-						if (columnsSelection.selectedItems.indexOf(previousColumnSelection[index]) == -1) {
+						if (selectionWindow.columnsSelection.selectedItems.indexOf(previousColumnSelection[index]) == -1) {
 							removeColumn(previousColumnSelection[index] as FacetTreeNode);
 						}
 					}
 				}
-				previousColumnSelection = columnsSelection.selectedItems;
-			}
-			
-			protected function columnSelectionLabelFunction(item:Object):String
-			{
-				var typedItem:FacetTreeNode = item as FacetTreeNode; 
-				return typedItem.reverseAwareLabel+" ("+typedItem.instanceCount+")";
+				previousColumnSelection = selectionWindow.columnsSelection.selectedItems;
 			}
 
 			protected function pageStepper_changeHandler(event:Event):void
@@ -224,30 +230,5 @@ along with tFacet.  If not, see <http://www.gnu.org/licenses/>.
 					  click="changeColumnsButton_clickHandler(event)"
 					  enabled="false"/>
 		</s:HGroup>
-			<s:PopUpAnchor id="popupAnchor"
-						   popUpPosition="below"
-						   right="2"
-						   bottom="0">
-				<s:TitleWindow
-					maxWidth="{FlexGlobals.topLevelApplication.width}"
-					maxHeight="{FlexGlobals.topLevelApplication.height}"
-					close="popupAnchor.displayPopUp = false"
-					title="Select visible properties">
-					<s:Scroller>
-						<s:Group>
-							<ui:CheckList
-								id="columnsSelection"
-								labelFunction="columnSelectionLabelFunction"				
-								dataProvider="{manager.possibleColumns}"
-								change="columnsSelection_changeHandler(event)"
-								itemRenderer="ui.supportClasses.ColumnSelectionItemRenderer">
-								<ui:layout>
-									<s:TileLayout orientation="columns"/>
-								</ui:layout>
-							</ui:CheckList>
-						</s:Group>
-					</s:Scroller>
-				</s:TitleWindow>
-			</s:PopUpAnchor>
 	</s:controlBarContent>
 </s:Panel>
