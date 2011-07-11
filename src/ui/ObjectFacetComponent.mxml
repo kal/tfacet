@@ -49,11 +49,13 @@ along with tFacet.  If not, see <http://www.gnu.org/licenses/>.
 			import mx.events.FlexEvent;
 			import mx.events.ItemClickEvent;
 			import mx.events.ListEvent;
+			import mx.managers.PopUpManager;
 			
 			import spark.events.IndexChangeEvent;
 			import spark.skins.spark.TitleWindowCloseButtonSkin;
 			
 			import ui.skins.FacetWindowSkin;
+			import ui.supportClasses.ColumnSelectionWindow;
 			import ui.supportClasses.IFacetComponent;
 
 			[Bindable]
@@ -61,6 +63,9 @@ along with tFacet.  If not, see <http://www.gnu.org/licenses/>.
 			private var previousColumnSelection:Vector.<Object> = new Vector.<Object>();
 			private var columnMap:Dictionary = new Dictionary();
 			private var nodeMap:Dictionary = new Dictionary();
+			
+			public var selectionWindow:ColumnSelectionWindow = new ColumnSelectionWindow();
+			private var selectionWindowVisible:Boolean;
 
 			public function setModel(model:IFacet):void
 			{
@@ -126,6 +131,18 @@ along with tFacet.  If not, see <http://www.gnu.org/licenses/>.
 				instanceGrid.selectedIndices = selectedIndices;
 			}
 			
+			public function changeColumnsButton_clickHandler(event:MouseEvent):void
+			{
+				if (!selectionWindowVisible) {
+					PopUpManager.addPopUp(selectionWindow, FlexGlobals.topLevelApplication as Main, true);
+					selectionWindow.columnsSelection.dataProvider = facetModel.possibleColumns;
+					selectionWindow.columnsSelection.addEventListener(IndexChangeEvent.CHANGE, columnsSelection_changeHandler);
+				} else {
+					PopUpManager.removePopUp(selectionWindow);
+				}
+				selectionWindowVisible = ! selectionWindowVisible;
+			}
+			
 			/**
 			 * Add a new detail column to the grid
 			 */
@@ -172,7 +189,7 @@ along with tFacet.  If not, see <http://www.gnu.org/licenses/>.
 			protected function columnsSelection_changeHandler(event:IndexChangeEvent):void
 			{
 				// case item selected
-				if (previousColumnSelection.length < columnsSelection.selectedItems.length)
+				if (previousColumnSelection.length < selectionWindow.columnsSelection.selectedItems.length)
 				{
 					addColumn(facetModel.possibleColumns.getItemAt(event.newIndex) as FacetTreeNode);
 					
@@ -182,13 +199,13 @@ along with tFacet.  If not, see <http://www.gnu.org/licenses/>.
 				{
 					for (var index:String in previousColumnSelection)
 					{
-						if (columnsSelection.selectedItems.indexOf(previousColumnSelection[index]) == -1)
+						if (selectionWindow.columnsSelection.selectedItems.indexOf(previousColumnSelection[index]) == -1)
 						{
 							removeColumn(previousColumnSelection[index] as FacetTreeNode);
 						}
 					}
 				}
-				previousColumnSelection = columnsSelection.selectedItems;
+				previousColumnSelection = selectionWindow.columnsSelection.selectedItems;
 			}
 			
 			protected function columnSelectionLabelFunction(item:Object):String
@@ -223,12 +240,6 @@ along with tFacet.  If not, see <http://www.gnu.org/licenses/>.
 				trace("sort descending: " + column.sortDescending);
 				facetModel.sortDescending = column.sortDescending;
 				facetModel.requestInstances(offset, ObjectFacet.ITEMS_PER_PAGE);
-			}
-			
-
-			protected function titlewindow1_initializeHandler(event:FlexEvent):void
-			{
-				maxHeight = FlexGlobals.topLevelApplication.height - 10;
 			}
 
 		]]>
@@ -276,28 +287,10 @@ along with tFacet.  If not, see <http://www.gnu.org/licenses/>.
 			<s:Label text="of {calculatePageCount(facetModel.instanceCount)}"/>
 			<s:Label text="Number of Objects: {facetModel.instanceCount}"/>
 		</s:HGroup>
-		<s:PopUpAnchor id="popupAnchor" popUpPosition="left" left="2">
-					<s:TitleWindow
-						close="popupAnchor.displayPopUp = false"
-						title="Select visible properties"
-						initialize="titlewindow1_initializeHandler(event)">
-						<s:Scroller width="100%" height="100%">
-							<s:Group>
-								<ui:CheckList
-									id="columnsSelection"
-									labelFunction="columnSelectionLabelFunction"				
-									dataProvider="{facetModel.possibleColumns}"
-									change="columnsSelection_changeHandler(event)"
-									itemRenderer="ui.supportClasses.ColumnSelectionItemRenderer">
-								</ui:CheckList>
-							</s:Group>
-						</s:Scroller>
-					</s:TitleWindow>
-		</s:PopUpAnchor>
 		<s:Button id="visiblePropertiesButton"
 				  label="Visible Properties"
 				  right="20" top="1"
 				  enabled="{facetModel.childrenLoaded}"
-				  click="popupAnchor.displayPopUp = !popupAnchor.displayPopUp;"/>
+				  click="changeColumnsButton_clickHandler(event)"/>
 	</ui:controlBarContent>
 </ui:BaseFacetComponent>
