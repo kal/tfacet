@@ -200,8 +200,8 @@ package model
 					_instanceMap[instance.resource.uri] = instance;
 				}
 			}
-			if (component.columnsSelection != null) {
-				for each (var node:FacetTreeNode in component.columnsSelection.selectedItems) {
+			if (component.selectionWindow.columnsSelection != null) {
+				for each (var node:FacetTreeNode in component.selectionWindow.columnsSelection.selectedItems) {
 					requestExtraColumns(node);
 				}				
 			}
