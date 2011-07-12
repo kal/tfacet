@@ -29,8 +29,9 @@ package model
 		{
 		}
 		
-		public static const TOOL_PAGE:String = "http://tfacet.visualdataweb.org";
-		public static const TOOL_VERSION:String = "0.7";
+		public static const TOOL_PAGE:String = "http://tfacet.visualdataweb.org";		
+		public static const TOOL_VERSION:String = "0.7.5";
+		public static const CODE_PAGE:String = "http://code.google.com/p/tfacet";	
 		
 		// URLs
 		// empty string: no proxy
