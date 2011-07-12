@@ -78,6 +78,16 @@ along with tFacet.  If not, see <http://www.gnu.org/licenses/>.
 		</s:VGroup>
 		
 		<s:VGroup width="100%">
+			<s:Label fontWeight="bold" text="Source" />
+			<s:RichEditableText width="100%" editable="false" focusEnabled="false">
+				<s:p>
+					The source code is published under the GNU General Public License and hosted on Google Code at<s:br/> 
+					<s:a href="{Constants.CODE_PAGE}">{Constants.CODE_PAGE}</s:a>
+				</s:p>
+			</s:RichEditableText>
+		</s:VGroup>
+		
+		<s:VGroup width="100%">
 			<s:Label fontWeight="bold" text="© 2010/2011 by" />
 			<s:RichEditableText editable="false" focusEnabled="false">
 				<s:a href="mailto:brunk@visualdataweb.org">Sören Brunk (brunk@visualdataweb.org)</s:a>
