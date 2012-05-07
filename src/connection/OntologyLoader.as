@@ -160,6 +160,7 @@ package connection
 				owlClass = ontology.getClass(result["class"]);
 				if (owlClass == null) {continue;}
 				var superClass:OwlClass = ontology.getClass(result["superclass"]);
+				if (superClass == null) {continue;} // ignore external classes
 				owlClass.superClasses.addItem(superClass);
 				superClass.subClasses.addItem(owlClass);
 			}
